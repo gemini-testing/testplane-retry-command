@@ -16,7 +16,9 @@ module.exports = (hermione, options) => {
     hermione.on(hermione.events.NEW_BROWSER, (browser, {browserId}) => {
         _.each(pluginConfig.rules, ({browsers, condition, retryCount, retryInterval}) => {
             if (utils.isBrowserIncluded(browsers, browserId)) {
-                conditions[condition](browser, retryCount, retryInterval);
+                const applyCondition = conditions[condition];
+
+                applyCondition(browser, retryCount, retryInterval);
             }
         });
     });
