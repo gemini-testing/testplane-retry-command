@@ -41,8 +41,7 @@ module.exports = {
                     retryCount: 5,
                     retryInterval: 120
                 }
-            ],
-            path: 'hermione-retry-command'
+            ]
         }
     }
     //...
