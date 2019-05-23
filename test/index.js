@@ -63,15 +63,16 @@ describe('hermione-retry-command', () => {
 
     it('should apply condition for browser', () => {
         const hermione = mkHermioneStub_();
+        const rule = {
+            browsers: /.*/,
+            condition: 'blank-screenshot',
+            retryCount: 100,
+            retryInterval: 500,
+            retryOnlyFirst: false
+        };
 
         plugin(hermione, {
-            rules: [
-                {
-                    condition: 'blank-screenshot',
-                    retryCount: 100,
-                    retryInterval: 500
-                }
-            ]
+            rules: [rule]
         });
 
         utils.isParamIncluded.returns(true);
@@ -80,7 +81,7 @@ describe('hermione-retry-command', () => {
 
         hermione.emit(events.NEW_BROWSER, browser, {});
 
-        assert.calledOnceWith(conditions['blank-screenshot'], browser, 100, 500);
+        assert.calledOnceWith(conditions['blank-screenshot'], browser, rule);
     });
 
     it('should not apply condition for unknown browser', () => {

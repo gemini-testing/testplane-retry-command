@@ -14,11 +14,11 @@ module.exports = (hermione, options) => {
     }
 
     hermione.on(hermione.events.NEW_BROWSER, (browser, {browserId}) => {
-        _.each(pluginConfig.rules, ({browsers, condition, retryCount, retryInterval}) => {
-            if (utils.isParamIncluded(browsers, browserId)) {
-                const applyCondition = conditions[condition];
+        _.each(pluginConfig.rules, rule => {
+            if (utils.isParamIncluded(rule.browsers, browserId)) {
+                const applyCondition = conditions[rule.condition];
 
-                applyCondition(browser, retryCount, retryInterval);
+                applyCondition(browser, rule);
             }
         });
     });
