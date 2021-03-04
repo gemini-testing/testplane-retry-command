@@ -3,6 +3,7 @@
 const Promise = require('bluebird');
 const EventEmitter = require('events');
 const utils = require('../../../../lib/conditions/blank-screenshot/utils');
+const commonUtils = require('../../../../lib/utils');
 const plugin = require('../../../../');
 
 const events = {
@@ -53,6 +54,7 @@ describe('blank-screenshot', () => {
 
     beforeEach(() => {
         sandbox.stub(utils, 'isBlankScreenshot').returns(false);
+        sandbox.stub(commonUtils, 'isWdioLatest').returns(false);
         sandbox.stub(Promise, 'delay').resolves();
     });
 
@@ -76,54 +78,75 @@ describe('blank-screenshot', () => {
         assert.calledOn(screenshot, browser);
     });
 
-    it('should return screenshot if it is not blank', async () => {
-        const screenshot = sinon.stub().resolves({value: 'non-blank-screenshot'});
-        const browser = init_({screenshot});
+    [
+        {
+            name: 'latest',
+            nonBlankScreenRes: 'non-blank-screenshot',
+            blankScreenRes: 'blank-screenshot',
+            isWdioLatestRes: true
+        },
+        {
+            name: 'old',
+            nonBlankScreenRes: {value: 'non-blank-screenshot'},
+            blankScreenRes: {value: 'blank-screenshot'},
+            isWdioLatestRes: false
+        }
+    ].forEach(({name, nonBlankScreenRes, blankScreenRes, isWdioLatestRes}) => {
+        describe(`executed with ${name} wdio`, () => {
+            beforeEach(() => {
+                commonUtils.isWdioLatest.returns(isWdioLatestRes);
+            });
 
-        const result = await browser.screenshot();
+            it('should return screenshot if it is not blank', async () => {
+                const screenshot = sinon.stub().resolves(nonBlankScreenRes);
+                const browser = init_({screenshot});
 
-        assert.deepEqual(result, {value: 'non-blank-screenshot'});
-    });
+                const result = await browser.screenshot();
 
-    it('should call base screenshot command again for blank screenshot', async () => {
-        const screenshot = sinon.stub().named('baseScreenshot').resolves({});
+                assert.deepEqual(result, nonBlankScreenRes);
+            });
 
-        const browser = init_({screenshot});
+            it('should call base screenshot command again for blank screenshot', async () => {
+                const screenshot = sinon.stub().named('baseScreenshot').resolves(nonBlankScreenRes);
 
-        utils.isBlankScreenshot.onFirstCall().returns(true);
+                const browser = init_({screenshot});
 
-        await browser.screenshot();
+                utils.isBlankScreenshot.onFirstCall().returns(true);
 
-        assert.calledTwice(screenshot);
-    });
+                await browser.screenshot();
 
-    it('should return non-blank screenshot if retry succeeds', async () => {
-        const screenshot = sinon.stub()
-            .onFirstCall().resolves({value: 'blank-screenshot'})
-            .onSecondCall().resolves({value: 'non-blank-screenshot'});
+                assert.calledTwice(screenshot);
+            });
 
-        const browser = init_({screenshot});
+            it('should return non-blank screenshot if retry succeeds', async () => {
+                const screenshot = sinon.stub()
+                    .onFirstCall().resolves(blankScreenRes)
+                    .onSecondCall().resolves(nonBlankScreenRes);
 
-        utils.isBlankScreenshot.withArgs('blank-screenshot').returns(true);
-        utils.isBlankScreenshot.withArgs('non-blank-screenshot').returns(false);
+                const browser = init_({screenshot}, {retryCount: 1});
 
-        const result = await browser.screenshot();
+                utils.isBlankScreenshot.withArgs('blank-screenshot').returns(true);
+                utils.isBlankScreenshot.withArgs('non-blank-screenshot').returns(false);
 
-        assert.deepEqual(result, {value: 'non-blank-screenshot'});
-    });
+                const result = await browser.screenshot();
 
-    it('should return previous screenshot if retry failed', async () => {
-        const screenshot = sinon.stub()
-            .onFirstCall().resolves({value: 'blank-screenshot'})
-            .onSecondCall().rejects(new Error());
+                assert.deepEqual(result, nonBlankScreenRes);
+            });
 
-        const browser = init_({screenshot});
+            it('should return previous screenshot if retry failed', async () => {
+                const screenshot = sinon.stub()
+                    .onFirstCall().resolves(blankScreenRes)
+                    .onSecondCall().rejects(new Error());
 
-        utils.isBlankScreenshot.withArgs('blank-screenshot').returns(true);
+                const browser = init_({screenshot});
 
-        const result = await browser.screenshot();
+                utils.isBlankScreenshot.withArgs('blank-screenshot').returns(true);
 
-        assert.deepEqual(result, {value: 'blank-screenshot'});
+                const result = await browser.screenshot();
+
+                assert.deepEqual(result, blankScreenRes);
+            });
+        });
     });
 
     it('should not retry if first screenshot failed', async () => {
