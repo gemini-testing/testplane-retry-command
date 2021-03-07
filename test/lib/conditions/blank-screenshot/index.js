@@ -12,10 +12,12 @@ const events = {
 
 describe('blank-screenshot', () => {
     const sandbox = sinon.createSandbox();
+    let browser;
 
-    const stubBrowser_ = ({screenshot} = {}) => {
+    const stubBrowser_ = () => {
         const browser = {
-            screenshot: screenshot || sinon.stub().resolves({})
+            screenshot: sinon.stub().resolves({value: 'default-base64'}),
+            takeScreenshot: sinon.stub().resolves('base64')
         };
 
         browser.addCommand = sinon.stub().callsFake((name, fn) => {
@@ -32,9 +34,7 @@ describe('blank-screenshot', () => {
         return hermione;
     };
 
-    const init_ = ({screenshot}, config = {retryCount: 2, retryInterval: 100}) => {
-        const browser = stubBrowser_({screenshot});
-
+    const init_ = (browser = stubBrowser_(), config = {retryCount: 2, retryInterval: 100}) => {
         const hermione = mkHermioneStub_();
 
         plugin(hermione, {
@@ -48,145 +48,136 @@ describe('blank-screenshot', () => {
         });
 
         hermione.emit(events.NEW_BROWSER, browser, {browserId: 'bar'});
-
-        return browser;
     };
 
     beforeEach(() => {
         sandbox.stub(utils, 'isBlankScreenshot').returns(false);
         sandbox.stub(commonUtils, 'isWdioLatest').returns(false);
         sandbox.stub(Promise, 'delay').resolves();
+
+        browser = stubBrowser_();
     });
 
     afterEach(() => sandbox.restore());
 
-    it('should wrap screenshot command of browser', () => {
-        const screenshot = sinon.stub().named('screenshot').resolves({});
-
-        const browser = init_({screenshot});
-
-        assert.calledOnceWith(browser.addCommand, 'screenshot', sinon.match.func, true);
-    });
-
-    it('should call base screenshot', async () => {
-        const screenshot = sinon.stub().named('baseScreenshot').resolves({});
-        const browser = init_({screenshot});
-
-        await browser.screenshot();
-
-        assert.called(screenshot);
-        assert.calledOn(screenshot, browser);
-    });
-
     [
         {
             name: 'latest',
+            cmdName: 'takeScreenshot',
             nonBlankScreenRes: 'non-blank-screenshot',
             blankScreenRes: 'blank-screenshot',
             isWdioLatestRes: true
         },
         {
             name: 'old',
+            cmdName: 'screenshot',
             nonBlankScreenRes: {value: 'non-blank-screenshot'},
             blankScreenRes: {value: 'blank-screenshot'},
             isWdioLatestRes: false
         }
-    ].forEach(({name, nonBlankScreenRes, blankScreenRes, isWdioLatestRes}) => {
+    ].forEach(({name, cmdName, nonBlankScreenRes, blankScreenRes, isWdioLatestRes}) => {
         describe(`executed with ${name} wdio`, () => {
             beforeEach(() => {
                 commonUtils.isWdioLatest.returns(isWdioLatestRes);
             });
 
-            it('should return screenshot if it is not blank', async () => {
-                const screenshot = sinon.stub().resolves(nonBlankScreenRes);
-                const browser = init_({screenshot});
+            it(`should wrap "${cmdName}" command of browser`, () => {
+                init_(browser);
 
-                const result = await browser.screenshot();
+                assert.calledOnceWith(browser.addCommand, cmdName, sinon.match.func, true);
+            });
+
+            it(`should call base "${cmdName}"`, async () => {
+                const baseScreenshot = browser[cmdName];
+                init_(browser);
+
+                await browser[cmdName]();
+
+                assert.called(baseScreenshot);
+                assert.calledOn(baseScreenshot, browser);
+            });
+
+            it('should return screenshot result if it is not blank', async () => {
+                browser[cmdName].resolves(nonBlankScreenRes);
+                init_(browser);
+
+                const result = await browser[cmdName]();
 
                 assert.deepEqual(result, nonBlankScreenRes);
             });
 
-            it('should call base screenshot command again for blank screenshot', async () => {
-                const screenshot = sinon.stub().named('baseScreenshot').resolves(nonBlankScreenRes);
-
-                const browser = init_({screenshot});
-
+            it(`should call base "${cmdName}" command again for blank screenshot`, async () => {
+                const baseScreenshot = browser[cmdName].resolves(nonBlankScreenRes);
                 utils.isBlankScreenshot.onFirstCall().returns(true);
+                init_(browser);
 
-                await browser.screenshot();
+                await browser[cmdName]();
 
-                assert.calledTwice(screenshot);
+                assert.calledTwice(baseScreenshot);
             });
 
-            it('should return non-blank screenshot if retry succeeds', async () => {
-                const screenshot = sinon.stub()
+            it(`should return non-blank "${cmdName}" if retry succeeds`, async () => {
+                browser[cmdName]
                     .onFirstCall().resolves(blankScreenRes)
                     .onSecondCall().resolves(nonBlankScreenRes);
 
-                const browser = init_({screenshot}, {retryCount: 1});
-
                 utils.isBlankScreenshot.withArgs('blank-screenshot').returns(true);
                 utils.isBlankScreenshot.withArgs('non-blank-screenshot').returns(false);
+                init_(browser, {retryCount: 1});
 
-                const result = await browser.screenshot();
+                const result = await browser[cmdName]();
 
                 assert.deepEqual(result, nonBlankScreenRes);
             });
 
-            it('should return previous screenshot if retry failed', async () => {
-                const screenshot = sinon.stub()
+            it(`should return previous "${cmdName}" result if retry failed`, async () => {
+                browser[cmdName]
                     .onFirstCall().resolves(blankScreenRes)
                     .onSecondCall().rejects(new Error());
 
-                const browser = init_({screenshot});
-
                 utils.isBlankScreenshot.withArgs('blank-screenshot').returns(true);
+                init_(browser);
 
-                const result = await browser.screenshot();
+                const result = await browser[cmdName]();
 
                 assert.deepEqual(result, blankScreenRes);
             });
+
+            it(`should not retry if first "${cmdName}" failed`, async () => {
+                const err = new Error();
+                browser[cmdName].rejects(err);
+                init_(browser);
+
+                try {
+                    await browser[cmdName]();
+                } catch (e) {
+                    assert.equal(e, err);
+                    return;
+                }
+
+                assert(false, 'should reject');
+            });
+
+            it('should retry blank screenshots specified number of times', async () => {
+                const retryCount = 3;
+                const baseScreenshot = browser[cmdName];
+                utils.isBlankScreenshot.returns(true);
+                init_(browser, {retryCount});
+
+                await browser[cmdName]();
+
+                assert.callCount(baseScreenshot, retryCount + 1);
+            });
+
+            it('should retry blank screenshots in specified intervals', async () => {
+                const retryInterval = 500;
+                utils.isBlankScreenshot.returns(true);
+                init_(browser, {retryInterval});
+
+                await browser[cmdName]();
+
+                assert.alwaysCalledWith(Promise.delay, retryInterval);
+            });
         });
-    });
-
-    it('should not retry if first screenshot failed', async () => {
-        const err = new Error();
-        const screenshot = sinon.stub().rejects(err);
-        const browser = init_({screenshot});
-
-        try {
-            await browser.screenshot();
-        } catch (e) {
-            assert.equal(e, err);
-            return;
-        }
-
-        assert(false, 'should reject');
-    });
-
-    it('should retry blank screenshots specified number of times', async () => {
-        const retryCount = 3;
-
-        const screenshot = sinon.stub().resolves({});
-        const browser = init_({screenshot}, {retryCount});
-
-        utils.isBlankScreenshot.returns(true);
-
-        await browser.screenshot();
-
-        assert.callCount(screenshot, retryCount + 1);
-    });
-
-    it('should retry blank screenshots in specified intervals', async () => {
-        const retryInterval = 500;
-
-        const screenshot = sinon.stub().resolves({});
-        const browser = init_({screenshot}, {retryInterval});
-
-        utils.isBlankScreenshot.returns(true);
-
-        await browser.screenshot();
-
-        assert.alwaysCalledWith(Promise.delay, retryInterval);
     });
 });
