@@ -3,7 +3,6 @@
 const Promise = require('bluebird');
 const EventEmitter = require('events');
 const utils = require('../../../../lib/conditions/blank-screenshot/utils');
-const commonUtils = require('../../../../lib/utils');
 const plugin = require('../../../../');
 
 const events = {
@@ -20,8 +19,9 @@ describe('blank-screenshot', () => {
             takeScreenshot: sinon.stub().resolves('base64')
         };
 
-        browser.addCommand = sinon.stub().callsFake((name, fn) => {
-            browser[name] = fn.bind(browser);
+        browser.overwriteCommand = sinon.stub().callsFake((name, command) => {
+            browser[name] = command.bind(browser, browser[name]);
+            sinon.spy(browser, name);
         });
 
         return browser;
@@ -52,7 +52,6 @@ describe('blank-screenshot', () => {
 
     beforeEach(() => {
         sandbox.stub(utils, 'isBlankScreenshot').returns(false);
-        sandbox.stub(commonUtils, 'isWdioLatest').returns(false);
         sandbox.stub(Promise, 'delay').resolves();
 
         browser = stubBrowser_();
@@ -60,124 +59,100 @@ describe('blank-screenshot', () => {
 
     afterEach(() => sandbox.restore());
 
-    [
-        {
-            name: 'latest',
-            cmdName: 'takeScreenshot',
-            nonBlankScreenRes: 'non-blank-screenshot',
-            blankScreenRes: 'blank-screenshot',
-            isWdioLatestRes: true
-        },
-        {
-            name: 'old',
-            cmdName: 'screenshot',
-            nonBlankScreenRes: {value: 'non-blank-screenshot'},
-            blankScreenRes: {value: 'blank-screenshot'},
-            isWdioLatestRes: false
+    it('should wrap "takeScreenshot" command of browser', () => {
+        init_(browser);
+
+        assert.calledOnceWith(browser.overwriteCommand, 'takeScreenshot', sinon.match.func);
+    });
+
+    it('should call base "takeScreenshot"', async () => {
+        const baseScreenshot = browser.takeScreenshot;
+        init_(browser);
+
+        await browser.takeScreenshot();
+
+        assert.called(baseScreenshot);
+    });
+
+    it('should return screenshot result if it is not blank', async () => {
+        browser.takeScreenshot.resolves('non-blank-screenshot');
+        init_(browser);
+
+        const result = await browser.takeScreenshot();
+
+        assert.deepEqual(result, 'non-blank-screenshot');
+    });
+
+    it('should call base "takeScreenshot" command again for blank screenshot', async () => {
+        const baseScreenshot = browser.takeScreenshot.resolves('non-blank-screenshot');
+        utils.isBlankScreenshot.onFirstCall().returns(true);
+        init_(browser);
+
+        await browser.takeScreenshot();
+
+        assert.calledTwice(baseScreenshot);
+    });
+
+    it('should return non-blank "takeScreenshot" if retry succeeds', async () => {
+        browser.takeScreenshot
+            .onFirstCall().resolves('blank-screenshot')
+            .onSecondCall().resolves('non-blank-screenshot');
+
+        utils.isBlankScreenshot.withArgs('blank-screenshot').returns(true);
+        utils.isBlankScreenshot.withArgs('non-blank-screenshot').returns(false);
+        init_(browser, {retryCount: 1});
+
+        const result = await browser.takeScreenshot();
+
+        assert.deepEqual(result, 'non-blank-screenshot');
+    });
+
+    it('should return previous "takeScreenshot" result if retry failed', async () => {
+        browser.takeScreenshot
+            .onFirstCall().resolves('blank-screenshot')
+            .onSecondCall().rejects(new Error());
+
+        utils.isBlankScreenshot.withArgs('blank-screenshot').returns(true);
+        init_(browser);
+
+        const result = await browser.takeScreenshot();
+
+        assert.deepEqual(result, 'blank-screenshot');
+    });
+
+    it('should not retry if first "takeScreenshot" failed', async () => {
+        const err = new Error();
+        browser.takeScreenshot.rejects(err);
+        init_(browser);
+
+        try {
+            await browser.takeScreenshot();
+        } catch (e) {
+            assert.equal(e, err);
+            return;
         }
-    ].forEach(({name, cmdName, nonBlankScreenRes, blankScreenRes, isWdioLatestRes}) => {
-        describe(`executed with ${name} wdio`, () => {
-            beforeEach(() => {
-                commonUtils.isWdioLatest.returns(isWdioLatestRes);
-            });
 
-            it(`should wrap "${cmdName}" command of browser`, () => {
-                init_(browser);
+        assert(false, 'should reject');
+    });
 
-                assert.calledOnceWith(browser.addCommand, cmdName, sinon.match.func, true);
-            });
+    it('should retry blank screenshots specified number of times', async () => {
+        const retryCount = 3;
+        const baseScreenshot = browser.takeScreenshot;
+        utils.isBlankScreenshot.returns(true);
+        init_(browser, {retryCount});
 
-            it(`should call base "${cmdName}"`, async () => {
-                const baseScreenshot = browser[cmdName];
-                init_(browser);
+        await browser.takeScreenshot();
 
-                await browser[cmdName]();
+        assert.callCount(baseScreenshot, retryCount + 1);
+    });
 
-                assert.called(baseScreenshot);
-                assert.calledOn(baseScreenshot, browser);
-            });
+    it('should retry blank screenshots in specified intervals', async () => {
+        const retryInterval = 500;
+        utils.isBlankScreenshot.returns(true);
+        init_(browser, {retryInterval});
 
-            it('should return screenshot result if it is not blank', async () => {
-                browser[cmdName].resolves(nonBlankScreenRes);
-                init_(browser);
+        await browser.takeScreenshot();
 
-                const result = await browser[cmdName]();
-
-                assert.deepEqual(result, nonBlankScreenRes);
-            });
-
-            it(`should call base "${cmdName}" command again for blank screenshot`, async () => {
-                const baseScreenshot = browser[cmdName].resolves(nonBlankScreenRes);
-                utils.isBlankScreenshot.onFirstCall().returns(true);
-                init_(browser);
-
-                await browser[cmdName]();
-
-                assert.calledTwice(baseScreenshot);
-            });
-
-            it(`should return non-blank "${cmdName}" if retry succeeds`, async () => {
-                browser[cmdName]
-                    .onFirstCall().resolves(blankScreenRes)
-                    .onSecondCall().resolves(nonBlankScreenRes);
-
-                utils.isBlankScreenshot.withArgs('blank-screenshot').returns(true);
-                utils.isBlankScreenshot.withArgs('non-blank-screenshot').returns(false);
-                init_(browser, {retryCount: 1});
-
-                const result = await browser[cmdName]();
-
-                assert.deepEqual(result, nonBlankScreenRes);
-            });
-
-            it(`should return previous "${cmdName}" result if retry failed`, async () => {
-                browser[cmdName]
-                    .onFirstCall().resolves(blankScreenRes)
-                    .onSecondCall().rejects(new Error());
-
-                utils.isBlankScreenshot.withArgs('blank-screenshot').returns(true);
-                init_(browser);
-
-                const result = await browser[cmdName]();
-
-                assert.deepEqual(result, blankScreenRes);
-            });
-
-            it(`should not retry if first "${cmdName}" failed`, async () => {
-                const err = new Error();
-                browser[cmdName].rejects(err);
-                init_(browser);
-
-                try {
-                    await browser[cmdName]();
-                } catch (e) {
-                    assert.equal(e, err);
-                    return;
-                }
-
-                assert(false, 'should reject');
-            });
-
-            it('should retry blank screenshots specified number of times', async () => {
-                const retryCount = 3;
-                const baseScreenshot = browser[cmdName];
-                utils.isBlankScreenshot.returns(true);
-                init_(browser, {retryCount});
-
-                await browser[cmdName]();
-
-                assert.callCount(baseScreenshot, retryCount + 1);
-            });
-
-            it('should retry blank screenshots in specified intervals', async () => {
-                const retryInterval = 500;
-                utils.isBlankScreenshot.returns(true);
-                init_(browser, {retryInterval});
-
-                await browser[cmdName]();
-
-                assert.alwaysCalledWith(Promise.delay, retryInterval);
-            });
-        });
+        assert.alwaysCalledWith(Promise.delay, retryInterval);
     });
 });
