@@ -43,18 +43,15 @@ describe('assert-view-failed', () => {
 
         browser.$ = sinon.stub().named('$').resolves(element);
         browser.assertView = assertView || sinon.stub().callsFake(setResult({}));
-        browser.addCommand = sinon.stub().callsFake((name, command, isElement) => {
-            const target = isElement ? element : browser;
 
-            target[name] = command.bind(target);
-            sinon.spy(target, name);
+        browser.overwriteCommand = sinon.stub();
+        browser.overwriteCommand.withArgs(sinon.match.string, sinon.match.func).callsFake((name, command) => {
+            browser[name] = command.bind(browser, browser[name]);
+            sinon.spy(browser, name);
         });
-
-        browser.overwriteCommand = sinon.stub().callsFake((name, command, isElement) => {
-            const target = isElement ? element : browser;
-
-            target[name] = command.bind(target, target[name]);
-            sinon.spy(target, name);
+        browser.overwriteCommand.withArgs(sinon.match.string, sinon.match.func, true).callsFake((name, command) => {
+            element[name] = command.bind(element, element[name]);
+            sinon.spy(element, name);
         });
 
         return browser;
@@ -98,8 +95,15 @@ describe('assert-view-failed', () => {
 
         const browser = init_({assertView});
 
-        const firstCallArgs = browser.overwriteCommand.firstCall.args;
-        assert.deepEqual([firstCallArgs[0], firstCallArgs[2]], ['assertView', undefined]);
+        assert.calledWith(browser.overwriteCommand, 'assertView', sinon.match.any);
+    });
+
+    it('should wrap assertView command of element', () => {
+        const assertView = sinon.stub();
+
+        const browser = init_({assertView});
+
+        assert.calledWith(browser.overwriteCommand, 'assertView', sinon.match.any, true);
     });
 
     it('should call base assertView on browser', async () => {
@@ -107,6 +111,16 @@ describe('assert-view-failed', () => {
         const browser = init_({assertView});
 
         await browser.assertView();
+
+        assert.called(assertView);
+    });
+
+    it('should call base assertView on element', async () => {
+        const assertView = sinon.stub();
+        const browser = init_({assertView});
+        const elem = await browser.$('.selector');
+
+        await elem.assertView();
 
         assert.called(assertView);
     });

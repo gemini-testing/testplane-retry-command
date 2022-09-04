@@ -19,7 +19,8 @@ describe('blank-screenshot', () => {
             takeScreenshot: sinon.stub().resolves('base64')
         };
 
-        browser.overwriteCommand = sinon.stub().callsFake((name, command) => {
+        browser.overwriteCommand = sinon.stub();
+        browser.overwriteCommand.withArgs(sinon.match.string, sinon.match.func).callsFake((name, command) => {
             browser[name] = command.bind(browser, browser[name]);
             sinon.spy(browser, name);
         });

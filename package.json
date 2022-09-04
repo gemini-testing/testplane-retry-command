@@ -37,6 +37,6 @@
     "lodash": "^4.17.11"
   },
   "peerDependencies": {
-    "hermione": ">=4.0.0"
+    "hermione": ">=5.2.0"
   }
 }
