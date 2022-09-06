@@ -35,5 +35,8 @@
     "debug": "^4.1.0",
     "gemini-configparser": "^1.0.0",
     "lodash": "^4.17.11"
+  },
+  "peerDependencies": {
+    "hermione": ">=5.2.0"
   }
 }

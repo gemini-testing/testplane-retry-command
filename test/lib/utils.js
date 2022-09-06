@@ -1,6 +1,6 @@
 'use strict';
 
-const {isParamIncluded, isWdioLatest} = require('../../lib/utils');
+const {isParamIncluded} = require('../../lib/utils');
 
 describe('utils/isParamIncluded', () => {
     it('should allow to pass matcher as a string', () => {
@@ -40,20 +40,6 @@ describe('utils/isParamIncluded', () => {
             const result = isParamIncluded(['foo', 'bar'], '');
 
             assert.isFalse(result);
-        });
-    });
-
-    describe('isWdioLatest', () => {
-        it('should return "true" if "overwriteCommand" method is exists', () => {
-            const browser = {overwriteCommand: () => {}};
-
-            assert.isTrue(isWdioLatest(browser));
-        });
-
-        it('should return "false" if "overwriteCommand" method is not exists', () => {
-            const browser = {};
-
-            assert.isFalse(isWdioLatest(browser));
         });
     });
 });
