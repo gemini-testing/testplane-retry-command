@@ -28,17 +28,17 @@ describe('blank-screenshot', () => {
         return browser;
     };
 
-    const mkHermioneStub_ = () => {
-        const hermione = new EventEmitter();
-        hermione.events = events;
+    const mkTestplaneStub_ = () => {
+        const testplane = new EventEmitter();
+        testplane.events = events;
 
-        return hermione;
+        return testplane;
     };
 
     const init_ = (browser = stubBrowser_(), config = {retryCount: 2, retryInterval: 100}) => {
-        const hermione = mkHermioneStub_();
+        const testplane = mkTestplaneStub_();
 
-        plugin(hermione, {
+        plugin(testplane, {
             rules: [
                 {
                     condition: 'blank-screenshot',
@@ -48,7 +48,7 @@ describe('blank-screenshot', () => {
             ]
         });
 
-        hermione.emit(events.NEW_BROWSER, browser, {browserId: 'bar'});
+        testplane.emit(events.NEW_BROWSER, browser, {browserId: 'bar'});
     };
 
     beforeEach(() => {

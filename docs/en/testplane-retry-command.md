@@ -1,23 +1,23 @@
-# hermione-retry-command
+# @testplane/retry-command
 
 ## Overview
 
-Use the `hermione-retry-command` plugin to retry commands at low level.
+Use the `@testplane/retry-command` plugin to retry commands at low level.
 
 ## Install
 
 ```bash
-npm install -D hermione-retry-command
+npm install -D @testplane/retry-command
 ```
 
 ## Setup
 
-Add the plugin to the `plugins` section of the `hermione` config:
+Add the plugin to the `plugins` section of the `testplane` config:
 
 ```javascript
 module.exports = {
     plugins: {
-        'hermione-retry-command': {
+        '@testplane/retry-command': {
             enabled: true,
             rules: [
                 {
@@ -35,10 +35,10 @@ module.exports = {
             ]
         },
 
-        // other hermione plugins...
+        // other testplane plugins...
     },
 
-    // other hermione settings...
+    // other testplane settings...
 }
 ```
 
@@ -67,7 +67,7 @@ Parameters this rule consists of:
 
 The condition under which you need to retry. There are 2 values available:
 * `blank-screenshot` &mdash; retry the low-level screenshot command [takeScreenshot][take-screenshot] if an empty screenshot is returned as a result of the command;
-* `assert-view-failed` &mdash; retry hermione's high-level command `assertView` to take a screenshot if it failed.
+* `assert-view-failed` &mdash; retry testplane's high-level command `assertView` to take a screenshot if it failed.
 
 ### browsers
 
@@ -87,5 +87,5 @@ _Be careful when setting a value for this parameter, as too large a value can dr
 
 Allows to retry only the first `assertView` command in the test if the value is set to `true`. This parameter is not used for other conditions.
 
-[hermione-retry-command]: https://github.com/gemini-testing/hermione-retry-command
+[@testplane/retry-command]: https://github.com/gemini-testing/testplane-retry-command
 [take-screenshot]: https://webdriver.io/docs/api/webdriver/#takescreenshot
