@@ -1,6 +1,6 @@
 {
   "name": "@testplane/retry-command",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Plugin to retry commands in Testplane",
   "main": "index.js",
   "scripts": {
