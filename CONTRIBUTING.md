@@ -7,7 +7,7 @@ New contributions are welcome. Follow this guide if you want to make one.
 Follow [Github guide](https://help.github.com/articles/creating-a-pull-request) to fork a repo
 and create a pull request.
 
-All bug fixes and new features should go to the [`master`](https://github.com/gemini-testing/hermione-retry-command/tree/master) branch.
+All bug fixes and new features should go to the [`master`](https://github.com/gemini-testing/testplane-retry-command/tree/master) branch.
 
 ## Commit messages
 
@@ -36,7 +36,7 @@ If you are fixing a bug, add a test that fails without your patch and passes wit
 
 When submitting an issue please do the following:
 
-1. [Search](https://github.com/gemini-testing/hermione-retry-command/issues) for same issues on github in order to prevent duplicates
+1. [Search](https://github.com/gemini-testing/testplane-retry-command/issues) for same issues on github in order to prevent duplicates
 2. Provide detailed issue description
 
 Note that if no response to contributors' questions is provided in 1 week then the issue may be considered as irrelevant/resolved and may be closed.

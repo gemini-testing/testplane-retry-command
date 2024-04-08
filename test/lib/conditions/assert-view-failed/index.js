@@ -13,14 +13,14 @@ describe('assert-view-failed', () => {
     const defaultRetryCount = 2;
     let setResult = function(result) {
         return function() {
-            this.executionContext.hermioneCtx.assertViewResults.add(result);
+            this.executionContext.testplaneCtx.assertViewResults.add(result);
         };
     };
 
     const stubBrowser_ = ({assertView} = {}) => {
         const browser = {
             executionContext: {
-                hermioneCtx: {
+                testplaneCtx: {
                     assertViewResults: {
                         _results: [],
                         get() {
@@ -57,19 +57,19 @@ describe('assert-view-failed', () => {
         return browser;
     };
 
-    const mkHermioneStub_ = () => {
-        const hermione = new EventEmitter();
-        hermione.events = events;
+    const mkTestplaneStub_ = () => {
+        const testplane = new EventEmitter();
+        testplane.events = events;
 
-        return hermione;
+        return testplane;
     };
 
     const init_ = (browserOpts, config = {retryCount: defaultRetryCount, retryInterval: 100}) => {
         const browser = stubBrowser_(browserOpts);
 
-        const hermione = mkHermioneStub_();
+        const testplane = mkTestplaneStub_();
 
-        plugin(hermione, {
+        plugin(testplane, {
             rules: [
                 {
                     condition: 'assert-view-failed',
@@ -79,7 +79,7 @@ describe('assert-view-failed', () => {
             ]
         });
 
-        hermione.emit(events.NEW_BROWSER, browser, {browserId: 'bar'});
+        testplane.emit(events.NEW_BROWSER, browser, {browserId: 'bar'});
 
         return browser;
     };
@@ -151,7 +151,7 @@ describe('assert-view-failed', () => {
 
         await browser.assertView();
 
-        assert.deepEqual(browser.executionContext.hermioneCtx.assertViewResults.get(), results.slice(results.length - 1));
+        assert.deepEqual(browser.executionContext.testplaneCtx.assertViewResults.get(), results.slice(results.length - 1));
     });
 
     it('should write previous result if next base assertView rejects', async () => {
@@ -168,7 +168,7 @@ describe('assert-view-failed', () => {
 
         await browser.assertView();
 
-        assert.deepEqual(browser.executionContext.hermioneCtx.assertViewResults.get(), results.slice(results.length - 1));
+        assert.deepEqual(browser.executionContext.testplaneCtx.assertViewResults.get(), results.slice(results.length - 1));
     });
 
     it('should retry assertView specified number of times', async () => {

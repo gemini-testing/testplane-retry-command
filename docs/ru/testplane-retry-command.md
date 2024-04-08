@@ -1,23 +1,23 @@
-# hermione-retry-command
+# @testplane/retry-command
 
 ## Обзор
 
-Используйте плагин `hermione-retry-command`, чтобы ретраить отдельные команды на низком уровне.
+Используйте плагин `@testplane/retry-command`, чтобы ретраить отдельные команды на низком уровне.
 
 ## Установка
 
 ```bash
-npm install -D hermione-retry-command
+npm install -D @testplane/retry-command
 ```
 
 ## Настройка
 
-Необходимо подключить плагин в разделе `plugins` конфига `hermione`:
+Необходимо подключить плагин в разделе `plugins` конфига `testplane`:
 
 ```javascript
 module.exports = {
     plugins: {
-        'hermione-retry-command': {
+        '@testplane/retry-command': {
             enabled: true,
             rules: [
                 {
@@ -35,10 +35,10 @@ module.exports = {
             ]
         },
 
-        // другие плагины гермионы...
+        // другие плагины testplane...
     },
 
-    // другие настройки гермионы...
+    // другие настройки testplane...
 }
 ```
 
@@ -67,7 +67,7 @@ module.exports = {
 
 Условие, при котором нужно ретраить. Всего доступны 2 значения:
 * `blank-screenshot` &mdash; ретраить низкоуровневую команду снятия скриншота [takeScreenshot][take-screenshot], если в результате команды вернулся пустой скриншот;
-* `assert-view-failed` &mdash; ретраить высокоуровневую команду гермионы для снятия скриншота `assertView`, если она упала.
+* `assert-view-failed` &mdash; ретраить высокоуровневую команду testplane для снятия скриншота `assertView`, если она упала.
 
 ### browsers
 
@@ -87,5 +87,5 @@ _Будьте осторожны, устанавливая значение дл
 
 Разрешает ретраить только первую команду `assertView` в тесте, если установлено значение `true`. Для других условий этот параметр не используется.
 
-[hermione-retry-command]: https://github.com/gemini-testing/hermione-retry-command
+[@testplane/retry-command]: https://github.com/gemini-testing/testplane-retry-command
 [take-screenshot]: https://webdriver.io/docs/api/webdriver/#takescreenshot

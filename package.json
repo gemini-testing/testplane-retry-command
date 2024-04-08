@@ -1,7 +1,7 @@
 {
-  "name": "hermione-retry-command",
-  "version": "2.0.0",
-  "description": "Plugin to retry commands in hermione",
+  "name": "@testplane/retry-command",
+  "version": "0.0.1",
+  "description": "Plugin to retry commands in Testplane",
   "main": "index.js",
   "scripts": {
     "lint": "eslint .",
@@ -10,19 +10,20 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/gemini-testing/hermione-retry-command.git"
+    "url": "git://github.com/gemini-testing/testplane-retry-command.git"
   },
   "keywords": [
+    "testplane",
     "hermione",
     "plugin",
-    "hermione-retry-command"
+    "retry-command"
   ],
   "author": "Rashid Ksirov <rashid@yandex-team.ru>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/gemini-testing/hermione-retry-command/issues"
+    "url": "https://github.com/gemini-testing/testplane-retry-command/issues"
   },
-  "homepage": "https://github.com/gemini-testing/hermione-retry-command#readme",
+  "homepage": "https://github.com/gemini-testing/testplane-retry-command#readme",
   "devDependencies": {
     "chai": "^4.2.0",
     "eslint": "^5.8.0",
@@ -35,8 +36,5 @@
     "debug": "^4.1.0",
     "gemini-configparser": "^1.0.0",
     "lodash": "^4.17.11"
-  },
-  "peerDependencies": {
-    "hermione": ">=5.2.0"
   }
 }

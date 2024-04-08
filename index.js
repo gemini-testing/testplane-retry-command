@@ -6,14 +6,14 @@ const parseConfig = require('./lib/config');
 const conditions = require('./lib/conditions');
 const utils = require('./lib/utils');
 
-module.exports = (hermione, options) => {
+module.exports = (testplane, options) => {
     const pluginConfig = parseConfig(options);
 
     if (!pluginConfig.enabled) {
         return;
     }
 
-    hermione.on(hermione.events.NEW_BROWSER, (browser, {browserId}) => {
+    testplane.on(testplane.events.NEW_BROWSER, (browser, {browserId}) => {
         _.each(pluginConfig.rules, rule => {
             if (utils.isParamIncluded(rule.browsers, browserId)) {
                 const applyCondition = conditions[rule.condition];

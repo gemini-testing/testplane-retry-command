@@ -9,14 +9,14 @@ const events = {
     NEW_BROWSER: 'fooBar'
 };
 
-describe('hermione-retry-command', () => {
+describe('@testplane/retry-command', () => {
     const sandbox = sinon.createSandbox();
 
-    const mkHermioneStub_ = () => {
-        const hermione = new EventEmitter();
-        hermione.events = events;
+    const mkTestplaneStub_ = () => {
+        const testplane = new EventEmitter();
+        testplane.events = events;
 
-        return hermione;
+        return testplane;
     };
 
     const stubBrowser_ = () => ({});
@@ -29,25 +29,25 @@ describe('hermione-retry-command', () => {
     afterEach(() => sandbox.restore());
 
     it('should be enabled by default', () => {
-        const hermione = mkHermioneStub_();
+        const testplane = mkTestplaneStub_();
 
-        plugin(hermione);
+        plugin(testplane);
 
-        assert.equal(hermione.listenerCount(events.NEW_BROWSER), 1);
+        assert.equal(testplane.listenerCount(events.NEW_BROWSER), 1);
     });
 
     it('should do nothing if disabled', () => {
-        const hermione = mkHermioneStub_();
+        const testplane = mkTestplaneStub_();
 
-        plugin(hermione, {enabled: false});
+        plugin(testplane, {enabled: false});
 
-        assert.equal(hermione.listenerCount(events.NEW_BROWSER), 0);
+        assert.equal(testplane.listenerCount(events.NEW_BROWSER), 0);
     });
 
     it('should check browser is included in config', () => {
-        const hermione = mkHermioneStub_();
+        const testplane = mkTestplaneStub_();
 
-        plugin(hermione, {
+        plugin(testplane, {
             rules: [
                 {
                     condition: 'blank-screenshot',
@@ -56,13 +56,13 @@ describe('hermione-retry-command', () => {
             ]
         });
 
-        hermione.emit(events.NEW_BROWSER, stubBrowser_(), {browserId: 'foo'});
+        testplane.emit(events.NEW_BROWSER, stubBrowser_(), {browserId: 'foo'});
 
         assert.calledOnceWith(utils.isParamIncluded, sinon.match(['bar', 'baz']), 'foo');
     });
 
     it('should apply condition for browser', () => {
-        const hermione = mkHermioneStub_();
+        const testplane = mkTestplaneStub_();
         const rule = {
             browsers: /.*/,
             condition: 'blank-screenshot',
@@ -71,7 +71,7 @@ describe('hermione-retry-command', () => {
             retryOnlyFirst: false
         };
 
-        plugin(hermione, {
+        plugin(testplane, {
             rules: [rule]
         });
 
@@ -79,15 +79,15 @@ describe('hermione-retry-command', () => {
 
         const browser = stubBrowser_();
 
-        hermione.emit(events.NEW_BROWSER, browser, {});
+        testplane.emit(events.NEW_BROWSER, browser, {});
 
         assert.calledOnceWith(conditions['blank-screenshot'], browser, rule);
     });
 
     it('should not apply condition for unknown browser', () => {
-        const hermione = mkHermioneStub_();
+        const testplane = mkTestplaneStub_();
 
-        plugin(hermione, {
+        plugin(testplane, {
             rules: [
                 {
                     condition: 'blank-screenshot'
@@ -97,7 +97,7 @@ describe('hermione-retry-command', () => {
 
         utils.isParamIncluded.returns(false);
 
-        hermione.emit(events.NEW_BROWSER, stubBrowser_(), {});
+        testplane.emit(events.NEW_BROWSER, stubBrowser_(), {});
 
         assert.notCalled(conditions['blank-screenshot']);
     });
